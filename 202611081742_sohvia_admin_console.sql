@@ -1,7 +1,0 @@
--- Admin console schema and guarded RPCs are deployed to Supabase project zlvprzlfamcfdkuxlzsi.
--- This file is included for source-control history. Do not re-run manually if migration already exists.
--- Private tables: private.admin_accounts, private.user_moderation,
--- private.user_entitlements, private.admin_audit_log.
--- RPCs: sohvia_is_admin, sohvia_account_status, sohvia_admin_list_users,
--- sohvia_admin_set_ban, sohvia_admin_set_coins, sohvia_admin_set_entitlement,
--- sohvia_admin_reports, sohvia_admin_update_report.
