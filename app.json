@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "SOHVIA",
+    "slug": "sohvia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#211625"
+    },
+    "android": {
+      "package": "com.sohvia.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#211625"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.sohvia.app"
+    }
+  }
+}
