@@ -1,0 +1,9 @@
+SOHVIA TEMIZ GITHUB YUKLEME PAKETI
+
+Bu ZIP acildiginda App.js, app.json, eas.json ve package.json dogrudan ana klasorde gorunmelidir.
+GitHub deposundaki eski dosyalari temizledikten sonra BU ZIP ICINDEKI HER SEYI (gizli .gitignore dahil) depo ana dizinine yukle.
+sohvia_android_starter adinda bir ust klasor olusturma; dosyalar dogrudan main dalinin kokune gelmeli.
+eas.json mutlaka App.js ile ayni seviyede olmalidir.
+
+APK icin Expo EAS Build profile: preview (Android APK).
+Bu kaynak paketi APK degildir. Derleme ve cihaz testleri ayrica yapilmalidir.

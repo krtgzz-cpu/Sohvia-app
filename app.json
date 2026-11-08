@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "SOHVIA",
+    "slug": "cuma",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#07162D"
+    },
+    "android": {
+      "package": "com.sohvia.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#07162D"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.sohvia.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SOHVIA rastgele görüntülü sohbet için kameranı kullanır.",
+        "NSMicrophoneUsageDescription": "SOHVIA görüntülü sohbet için mikrofonunu kullanır."
+      }
+    },
+    "owner": "cumakurtgozs-team",
+    "extra": {
+      "eas": {
+        "projectId": "7ffb0906-6eea-4278-b0e6-4464bee0fd42"
+      }
+    },
+    "plugins": [
+      "@config-plugins/react-native-webrtc"
+    ]
+  }
+}
