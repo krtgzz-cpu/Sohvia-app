@@ -156,6 +156,15 @@ export default function App() {
       if (!h.error) setMyTiles(h.data?.tiles || []);
     } else setMyTiles([]);
   }
+  async function openGame(game) {
+    if (game.slug === "chess") { setOnlineChess(true); return; }
+    if (game.slug !== "okey-101") {
+      Alert.alert("Bu oyun hazırlanıyor", `${game.title} için oynanabilir ekran henüz tamamlanmadı.`);
+      return;
+    }
+    await createGameRoom(game);
+  }
+
   async function createGameRoom(game) {
     try {
       setRoomBusy(true); setSelectedGame(game);
@@ -366,6 +375,18 @@ export default function App() {
     if (error) { Alert.alert("Mesajlar alınamadı",error.message); return; }
     setMessages(data || []);
   }
+  useEffect(() => {
+    if (!target?.id || !session?.user?.id) return;
+    const channel = supabase.channel(`sohvia-chat-${session.user.id}-${target.id}`)
+      .on("postgres_changes", {event:"INSERT", schema:"public", table:"messages"}, payload => {
+        const row = payload.new;
+        const belongs = (row.sender_id === session.user.id && row.receiver_id === target.id) ||
+          (row.sender_id === target.id && row.receiver_id === session.user.id);
+        if (belongs) loadMessages(target);
+      }).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [target?.id, session?.user?.id]);
+
   async function sendMessage() {
     if (!message.trim() || !target) return;
     const body=message.trim(); setMessage("");
@@ -432,8 +453,8 @@ export default function App() {
           </View>)}
           <View style={styles.gamesPromo}><Text style={styles.gamesEyebrow}>SOHVIA ARCADE</Text><Text style={styles.gamesPromoTitle}>Oyunun keyfi, arkadaşlarınla güzel.</Text><Text style={styles.muted}>Bir oyun seç, oda kur ve arkadaşını davet et.</Text><View style={styles.gamesStats}><Text style={styles.gamesStat}>✦ Özel odalar</Text><Text style={styles.gamesStat}>⌁ Canlı eşleşme altyapısı</Text></View></View>
           <Text style={styles.section}>Öne çıkan oyunlar</Text>
-          {games.map(game=>{const meta=gameMeta(game);return <TouchableOpacity key={game.slug} activeOpacity={0.88} style={[styles.gameTile,{borderColor:meta.accent+"88"}]} onPress={()=>createGameRoom(game)} disabled={roomBusy}>
-            <View style={[styles.gameArt,{backgroundColor:meta.accent+"20",borderColor:meta.accent+"66"}]}><Text style={{fontSize:34}}>{meta.emoji}</Text><Text style={[styles.gameArtMark,{color:meta.accent}]}>{meta.art}</Text></View>
+          {games.map(game=>{const meta=gameMeta(game);return <TouchableOpacity key={game.slug} activeOpacity={0.88} style={[styles.gameTile,{borderColor:meta.accent+"88"}]} onPress={()=>openGame(game)} disabled={roomBusy}>
+            <View style={[styles.gameArt,{backgroundColor:meta.accent+"20",borderColor:meta.accent+"66"}]}><Text style={{fontSize:42}}>{meta.emoji}</Text><Text style={[styles.gameArtMark,{color:meta.accent}]}>{meta.art}</Text></View>
             <View style={{flex:1}}><Text style={[styles.gameTag,{color:meta.accent}]}>{meta.tag}</Text><Text style={styles.gameName}>{game.title}</Text><Text style={styles.muted}>{meta.subtitle}</Text><Text style={styles.gamePlayers}>♙ {game.min_players||2}–{game.max_players||meta.players} oyuncu</Text></View>
             <View style={[styles.playPill,{backgroundColor:meta.accent}]}><Text style={styles.playPillText}>OYNA ›</Text></View>
           </TouchableOpacity>})}
@@ -443,7 +464,8 @@ export default function App() {
           {people.map(person=><View key={person.id} style={styles.rowCard}><Text style={styles.avatar}>👤</Text><View style={{flex:1}}><Text style={styles.cardTitle}>{person.display_name || person.username}</Text><Text style={styles.muted}>@{person.username}</Text></View><TouchableOpacity onPress={()=>sendFriendRequest(person)}><Text style={styles.gold}>+ Ekle</Text></TouchableOpacity><TouchableOpacity onPress={()=>openChat(person)}><Text style={styles.gold}>  Mesaj</Text></TouchableOpacity></View>)}
         </>}
         {tab==="Oyunlar" && <>
-          <Text style={styles.heading}>Oyun Merkezi 🎮</Text>\n          <Btn title="♟ Çevrim içi Satranç oyna" onPress={()=>setOnlineChess(true)}/>
+          <Text style={styles.heading}>Oyun Merkezi 🎮</Text>
+          <Btn title="♟ Çevrim içi Satranç oyna" onPress={()=>setOnlineChess(true)}/>
           {gameRoom ? <View style={styles.postCard}>
             <View style={styles.tableHeader}><Text style={styles.gameTag}>SOHVIA PRIVATE TABLE</Text><Text style={styles.cardTitle}>{selectedGame?.title || "SOHVIA Oyunu"} · Oyun Odası</Text></View>
             <Text style={styles.muted}>Arkadaşına bu kodu gönder:</Text>
@@ -461,7 +483,7 @@ export default function App() {
             <Field placeholder="6 haneli oda kodu" autoCapitalize="characters" value={joinCode} onChangeText={setJoinCode}/>
             <Btn title={roomBusy?"Bağlanıyor…":"Odaya katıl"} onPress={joinGameRoom}/>
             <Text style={styles.section}>Oda oluştur</Text>
-            {games.map(game=><TouchableOpacity key={game.slug} style={styles.rowCard} onPress={()=>createGameRoom(game)} disabled={roomBusy}><Text style={styles.gameEmoji}>{game.slug==="okey-101"?"🀄":"🎲"}</Text><View style={{flex:1}}><Text style={styles.cardTitle}>{game.title}</Text><Text style={styles.muted}>{game.category || "Oyun"} • {game.min_players}-{game.max_players} kişi</Text></View><Text style={styles.gold}>Oda kur ›</Text></TouchableOpacity>)}
+            {games.map(game=><TouchableOpacity key={game.slug} style={styles.rowCard} onPress={()=>openGame(game)} disabled={roomBusy}><Text style={styles.gameEmoji}>{game.slug==="okey-101"?"🀄":"🎲"}</Text><View style={{flex:1}}><Text style={styles.cardTitle}>{game.title}</Text><Text style={styles.muted}>{game.category || "Oyun"} • {game.min_players}-{game.max_players} kişi</Text></View><Text style={styles.gold}>Oda kur ›</Text></TouchableOpacity>)}
           </>}
         </>}
         {tab==="Sohbet" && <>
@@ -470,13 +492,25 @@ export default function App() {
             <TouchableOpacity onPress={()=>setTarget(null)}><Text style={styles.gold}>‹ Sohbet listesine dön</Text></TouchableOpacity>
             <Text style={styles.cardTitle}>@{target.username}</Text>
             {messages.map(m=><View key={m.id} style={[styles.bubble,m.sender_id===session.user.id?styles.mine:styles.theirs]}><Text style={styles.bubbleText}>{m.body}</Text></View>)}
-            <View style={styles.compose}><TextInput style={styles.messageInput} placeholder="Mesaj yaz…" placeholderTextColor={C.muted} value={message} onChangeText={setMessage}/><TouchableOpacity onPress={sendMessage}><Text style={styles.gold}>Gönder</Text></TouchableOpacity></View>
+            <View style={styles.chatComposer}><TextInput style={styles.chatInput} placeholder="Mesajını yaz…" placeholderTextColor="#7892AE" value={message} onChangeText={setMessage} multiline maxLength={2000}/><TouchableOpacity style={styles.sendButton} onPress={sendMessage} disabled={!message.trim()}><Text style={styles.sendButtonText}>➤</Text></TouchableOpacity></View>
             <Btn secondary title="Mesajları yenile" onPress={()=>loadMessages(target)}/>
-          </> : <Text style={styles.muted}>Mesaj başlatmak için Keşfet bölümünden bir kullanıcı seç.</Text>}
+          </> : <>
+            <Text style={styles.muted}>Bir kişiye dokunarak özel sohbetini aç.</Text>
+            {people.map(person=><TouchableOpacity key={person.id} style={styles.chatContact} onPress={()=>openChat(person)} activeOpacity={0.8}>
+              <View style={styles.chatAvatar}><Text style={{fontSize:24}}>👤</Text></View>
+              <View style={{flex:1}}><Text style={styles.chatName}>{person.display_name || person.username}</Text><Text style={styles.muted}>@{person.username}</Text></View>
+              <Text style={styles.chatArrow}>›</Text>
+            </TouchableOpacity>)}
+            {people.length===0&&<Text style={styles.muted}>Henüz başka üye bulunmuyor.</Text>}
+          </>}
         </>}
         {tab==="Profil" && <>
           <Text style={styles.heading}>Profilim 👤</Text>
-          <View style={styles.profileCard}>{avatarUrl ? <Image source={{uri:avatarUrl}} style={styles.profileImage}/> : <Text style={styles.profileAvatar}>👑</Text>}<Text style={styles.heroTitle}>{profile?.display_name || "SOHVIA Üyesi"}</Text><Text style={styles.muted}>@{profile?.username || ""}</Text><Text style={styles.muted}>{profile?.bio || "Henüz biyografi eklenmedi."}</Text><Text style={styles.section}>Jeton: {wallet?.coin_balance ?? 0}</Text></View>
+          <View style={styles.profileCard}>{avatarUrl ? <Image source={{uri:avatarUrl}} style={styles.profileImage}/> : <Text style={styles.profileAvatar}>👑</Text>}<Text style={styles.heroTitle}>{profile?.display_name || "SOHVIA Üyesi"}</Text><Text style={styles.muted}>@{profile?.username || ""}</Text><Text style={styles.muted}>{profile?.bio || "Henüz biyografi eklenmedi."}</Text>
+            <View style={styles.profileBadges}><Text style={styles.profileBadge}>👑 {(profile?.membership || "free").toUpperCase()}</Text><Text style={styles.profileBadge}>✓ {profile?.blue_tick ? "Mavi Tik" : "Doğrulanmamış"}</Text></View>
+            <View style={styles.profileStats}><View><Text style={styles.profileStatValue}>—</Text><Text style={styles.muted}>Gönderi</Text></View><View><Text style={styles.profileStatValue}>—</Text><Text style={styles.muted}>Takipçi</Text></View><View><Text style={styles.profileStatValue}>—</Text><Text style={styles.muted}>Takip</Text></View></View>
+            <Text style={styles.section}>Jeton: {wallet?.coin_balance ?? 0}</Text></View>
+          <View style={styles.membershipPanel}><Text style={styles.membershipTitle}>SOHVIA ÜYELİKLERİ</Text><Text style={styles.membershipText}>PLUS · PRO · MAX</Text><Text style={styles.muted}>Üyelik paketleri ve profil efektleri. Ödeme altyapısı henüz etkin değil.</Text><View style={styles.membershipRow}><Text style={styles.membershipText}>Mavi Tik başvurusu</Text><Text style={styles.membershipPrice}>130 TL’den</Text></View><Text style={styles.muted}>18 yaş ve üzeri kullanıcılar içindir. Yaş doğrulaması ve ödeme bağlantısı tamamlanmadan başvuru/ödeme alınmaz.</Text></View>
           <Btn secondary title={uploading?"Yükleniyor…":"Profil fotoğrafını değiştir"} onPress={()=>chooseAndUpload("avatar")}/>
           <Text style={styles.section}>Biyografi</Text>
           <Field placeholder="Kendinden kısaca bahset (160 karakter)" value={bioDraft} onChangeText={setBioDraft} maxLength={160} multiline/>
@@ -527,7 +561,7 @@ export default function App() {
         </View>
       </Modal>
       <View style={styles.nav}>
-        {["Ana Sayfa","Keşfet","Oyunlar","Video","Sohbet","Profil",...(isAdmin?["Yönetici"]:[])].map((x,i)=><TouchableOpacity key={x} style={styles.navItem} onPress={()=>{if(x==="Video"){setRandomVideo(true);return;}setTab(x);if(x!=="Sohbet")setTarget(null);}}><Text style={{fontSize:19}}>{["🏠","🔎","🎮","📹","💬","👤","👑"][i]}</Text><Text style={[styles.navText,tab===x&&{color:C.gold}]}>{x}</Text></TouchableOpacity>)}
+        {["Ana Sayfa","Keşfet","Oyunlar","Video","Sohbet","Profil",...(isAdmin?["Yönetici"]:[])].map((x,i)=><TouchableOpacity key={x} style={styles.navItem} onPress={()=>{if(x==="Video"){setRandomVideo(true);return;}setTab(x);if(x!=="Sohbet")setTarget(null);}}><Text style={[styles.navIcon,tab===x&&styles.navIconActive]}>{["⌂","⌕","🎮","▣","✉","◎","♛"][i]}</Text><Text style={[styles.navText,tab===x&&{color:C.blue,fontWeight:"900"}]}>{x}</Text></TouchableOpacity>)}
       </View>
     </SafeAreaView>
   );
@@ -546,13 +580,15 @@ const styles=StyleSheet.create({
   body:{flex:1,paddingHorizontal:16,paddingTop:18},hero:{backgroundColor:"#10345B",padding:20,borderRadius:22,borderWidth:1,borderColor:"#258BD0",marginBottom:20},
   kicker:{color:C.gold,fontWeight:"bold",fontSize:11},heroTitle:{color:C.white,fontWeight:"bold",fontSize:24,marginVertical:10},section:{color:C.white,fontWeight:"bold",fontSize:17,marginTop:18,marginBottom:10},
   rowCard:{backgroundColor:C.card,padding:13,borderRadius:14,marginBottom:9,flexDirection:"row",alignItems:"center",gap:10,borderWidth:1,borderColor:C.line},
-  gamesPromo:{backgroundColor:"#0D2C50",borderWidth:1,borderColor:"#267FC0",borderRadius:20,padding:18,marginBottom:18},gamesEyebrow:{color:"#C3A2FF",fontWeight:"900",fontSize:10,letterSpacing:2},gamesPromoTitle:{color:C.white,fontSize:22,fontWeight:"900",marginTop:8,lineHeight:28},gamesStats:{flexDirection:"row",flexWrap:"wrap",gap:8,marginTop:14},gamesStat:{color:"#D8C8F2",fontSize:10,backgroundColor:"#35294A",padding:8,borderRadius:10},gameTile:{backgroundColor:"#102747",borderWidth:1,borderRadius:18,padding:12,marginBottom:11,flexDirection:"row",alignItems:"center",gap:12},gameArt:{width:76,height:82,borderRadius:15,borderWidth:1,alignItems:"center",justifyContent:"center",position:"relative"},gameArtMark:{fontSize:10,fontWeight:"900",position:"absolute",bottom:5,right:8},gameTag:{fontSize:9,fontWeight:"900",letterSpacing:1.5},gameName:{fontSize:17,color:C.white,fontWeight:"900",marginTop:3},gamePlayers:{color:"#D8C8F2",fontSize:10,marginTop:6},playPill:{paddingHorizontal:11,paddingVertical:9,borderRadius:12},playPillText:{color:"#17101E",fontWeight:"900",fontSize:10},tableHeader:{marginBottom:12},okeyTable:{backgroundColor:"#103D35",borderRadius:18,borderWidth:2,borderColor:"#C69A4A",padding:14,marginTop:12,marginBottom:12},okeyTableTitle:{color:"#F4D28B",fontWeight:"900",letterSpacing:2,textAlign:"center",marginBottom:12},okeyCenter:{backgroundColor:"#145347",borderRadius:50,padding:15,alignItems:"center",marginBottom:14,borderWidth:1,borderColor:"#438B72"},okeyCenterEmoji:{fontSize:32},okeyCenterText:{color:"#F7E5B9",fontWeight:"900",fontSize:11,letterSpacing:1},tileRack:{flexDirection:"row",flexWrap:"wrap",gap:5,marginVertical:12},tile:{backgroundColor:"#FFF9EC",borderRadius:7,width:36,height:51,alignItems:"center",justifyContent:"center",borderWidth:1,borderColor:"#D9C9A8",elevation:2},tileColor:{fontSize:5,color:"#746B60",fontWeight:"700",marginTop:2},
+  gamesPromo:{backgroundColor:"#0D2C50",borderWidth:1,borderColor:"#267FC0",borderRadius:20,padding:18,marginBottom:18},gamesEyebrow:{color:"#C3A2FF",fontWeight:"900",fontSize:10,letterSpacing:2},gamesPromoTitle:{color:C.white,fontSize:22,fontWeight:"900",marginTop:8,lineHeight:28},gamesStats:{flexDirection:"row",flexWrap:"wrap",gap:8,marginTop:14},gamesStat:{color:"#D8C8F2",fontSize:10,backgroundColor:"#35294A",padding:8,borderRadius:10},gameTile:{backgroundColor:"#102747",borderWidth:1,borderRadius:18,padding:12,marginBottom:11,flexDirection:"row",alignItems:"center",gap:12},gameArt:{width:88,height:92,borderRadius:17,borderWidth:1,alignItems:"center",justifyContent:"center",position:"relative"},gameArtMark:{fontSize:10,fontWeight:"900",position:"absolute",bottom:5,right:8},gameTag:{fontSize:9,fontWeight:"900",letterSpacing:1.5},gameName:{fontSize:17,color:C.white,fontWeight:"900",marginTop:3},gamePlayers:{color:"#D8C8F2",fontSize:10,marginTop:6},playPill:{paddingHorizontal:11,paddingVertical:9,borderRadius:12},playPillText:{color:"#17101E",fontWeight:"900",fontSize:10},tableHeader:{marginBottom:12},okeyTable:{backgroundColor:"#103D35",borderRadius:18,borderWidth:2,borderColor:"#C69A4A",padding:14,marginTop:12,marginBottom:12},okeyTableTitle:{color:"#F4D28B",fontWeight:"900",letterSpacing:2,textAlign:"center",marginBottom:12},okeyCenter:{backgroundColor:"#145347",borderRadius:50,padding:15,alignItems:"center",marginBottom:14,borderWidth:1,borderColor:"#438B72"},okeyCenterEmoji:{fontSize:32},okeyCenterText:{color:"#F7E5B9",fontWeight:"900",fontSize:11,letterSpacing:1},tileRack:{flexDirection:"row",flexWrap:"wrap",gap:5,marginVertical:12},tile:{backgroundColor:"#FFF9EC",borderRadius:7,width:36,height:51,alignItems:"center",justifyContent:"center",borderWidth:1,borderColor:"#D9C9A8",elevation:2},tileColor:{fontSize:5,color:"#746B60",fontWeight:"700",marginTop:2},
   cardTitle:{color:C.white,fontWeight:"bold",fontSize:14},gold:{color:C.gold,fontWeight:"bold"},gameEmoji:{fontSize:25},avatar:{fontSize:26,marginRight:4},
-  nav:{flexDirection:"row",justifyContent:"space-around",paddingTop:9,paddingBottom:20,backgroundColor:"#091D36",borderTopWidth:1,borderColor:C.line},
+  nav:{flexDirection:"row",justifyContent:"space-around",paddingTop:9,paddingBottom:20,backgroundColor:"#FFFFFF",borderTopWidth:1,borderColor:C.line},
   videoLaunch:{backgroundColor:"#0B3159",borderWidth:1,borderColor:"#27AFFF",borderRadius:18,padding:15,marginBottom:18,flexDirection:"row",alignItems:"center",gap:12},videoLaunchIcon:{fontSize:30},videoLaunchTitle:{color:C.white,fontWeight:"900",fontSize:15},videoLaunchArrow:{color:"#67D8FF",fontSize:26,fontWeight:"900"},
-  navItem:{alignItems:"center",minWidth:55},navText:{color:C.muted,fontSize:9,marginTop:4},
-  bubble:{padding:12,borderRadius:13,marginVertical:5,maxWidth:"85%"},mine:{backgroundColor:"#624A35",alignSelf:"flex-end"},theirs:{backgroundColor:C.card,alignSelf:"flex-start"},
-  bubbleText:{color:C.white},compose:{flexDirection:"row",alignItems:"center",gap:10,marginTop:12},messageInput:{flex:1,backgroundColor:C.card,color:C.white,padding:12,borderRadius:12},
+  navItem:{alignItems:"center",justifyContent:"center",minWidth:48,flex:1,paddingVertical:3},navIcon:{fontSize:27,color:"#6F88A5",fontWeight:"700"},navIconActive:{color:C.blue,fontSize:30},navText:{color:C.muted,fontSize:10,marginTop:2},
+  bubble:{padding:13,borderRadius:18,marginVertical:6,maxWidth:"84%",borderWidth:1},mine:{backgroundColor:"#DCEEFF",borderColor:"#B8DBFF",alignSelf:"flex-end",borderBottomRightRadius:5},theirs:{backgroundColor:"#FFFFFF",borderColor:C.line,alignSelf:"flex-start",borderBottomLeftRadius:5},
+  bubbleText:{color:"#173653",fontSize:15,lineHeight:21},compose:{flexDirection:"row",alignItems:"center",gap:10,marginTop:12},messageInput:{flex:1,backgroundColor:C.card,color:C.white,padding:12,borderRadius:12},
+  chatContact:{backgroundColor:"#FFFFFF",borderWidth:1,borderColor:C.line,borderRadius:17,padding:13,marginBottom:10,flexDirection:"row",alignItems:"center",gap:12},chatAvatar:{width:52,height:52,borderRadius:26,backgroundColor:"#E7F2FF",alignItems:"center",justifyContent:"center"},chatName:{color:"#173653",fontWeight:"900",fontSize:16},chatArrow:{fontSize:30,color:C.blue},chatComposer:{flexDirection:"row",alignItems:"flex-end",gap:9,marginTop:14,padding:8,backgroundColor:"#FFFFFF",borderRadius:20,borderWidth:1,borderColor:C.line},chatInput:{flex:1,maxHeight:110,minHeight:42,color:"#173653",fontSize:15,paddingHorizontal:10,paddingVertical:9},sendButton:{width:44,height:44,borderRadius:22,backgroundColor:C.blue,alignItems:"center",justifyContent:"center"},sendButtonText:{color:"#FFFFFF",fontSize:22,fontWeight:"900"},
+  profileBadges:{flexDirection:"row",gap:8,marginTop:12,flexWrap:"wrap"},profileBadge:{backgroundColor:"#E8F3FF",color:"#087BEE",paddingHorizontal:12,paddingVertical:7,borderRadius:14,fontWeight:"900",overflow:"hidden"},profileStats:{flexDirection:"row",justifyContent:"space-around",width:"100%",marginTop:18,paddingTop:15,borderTopWidth:1,borderColor:C.line},profileStatValue:{fontSize:20,fontWeight:"900",color:"#173653",textAlign:"center"},membershipPanel:{backgroundColor:"#FFFFFF",borderRadius:18,borderWidth:1,borderColor:"#CFE3F8",padding:16,marginTop:14},membershipTitle:{color:"#087BEE",fontWeight:"900",fontSize:15,letterSpacing:1},membershipText:{color:"#173653",fontWeight:"900",fontSize:15,marginTop:8},membershipPrice:{color:"#087BEE",fontWeight:"900",fontSize:16},membershipRow:{flexDirection:"row",justifyContent:"space-between",alignItems:"center",marginTop:14,paddingTop:12,borderTopWidth:1,borderColor:C.line},
   profileCard:{backgroundColor:C.card,padding:22,borderRadius:18,alignItems:"center"},profileAvatar:{fontSize:60,marginBottom:12},profileImage:{width:104,height:104,borderRadius:52,marginBottom:12,borderWidth:2,borderColor:C.gold},
   postCard:{backgroundColor:C.card,padding:15,borderRadius:15,marginBottom:12,borderWidth:1,borderColor:C.line},postBody:{color:C.white,fontSize:15,marginVertical:12,lineHeight:21},commentText:{color:C.muted,fontSize:12,marginTop:7},storyPill:{backgroundColor:C.card,borderRadius:13,padding:12,marginRight:8,minWidth:120}
 });
