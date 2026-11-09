@@ -1,36 +1,27 @@
-# SOHVIA — GitHub'a yüklenecek güncel Android/iOS kaynak paketi
+# SOHVIA — Tasarımı uygulanmış kaynak kod paketi
 
-## Paket içeriği
-- Güncel Expo / React Native uygulama kodu (`App.js`)
-- Supabase bağlantısı (yalnızca publishable key)
-- Oyun kataloğu, oda açma ve oda koduyla katılma ekranları
-- Oyun odalarında Realtime değişiklik dinleme
-- 101 Okey için sunucudan ilk taş dağıtımı ve oyuncunun kendi taşlarını görmesi
-- Yönetici/moderasyon ekranları
-- Güncellenmiş SOHVIA uygulama simgesi
-- Oyun odası ve 101 Okey ilk dağıtım SQL migration dosyaları
+Bu paket, onaylanan SOHVIA tasarım dilini gerçek React Native ekran stillerine uygular:
+- Koyu siyah/lacivert arka plan
+- Neon mor ve lila vurgular
+- Taçlı S marka alanı
+- Giriş/kayıt, ana sayfa, oyunlar, sohbet, profil ve yönetici ekranlarında ortak görsel tema
+
+`TASARIM_ONIZLEME.png` onaylanan tasarım referansıdır.
 
 ## GitHub'a yükleme
-1. ZIP'i iPhone Dosyalar uygulamasında aç.
-2. İçindeki `sohvia_android_starter` klasörüne gir.
-3. Bu klasörün İÇİNDEKİ tüm dosya ve klasörleri GitHub deposunun köküne yükle. Klasörün kendisini bir alt klasör olarak yükleme.
-4. `App.js`, `app.json`, `eas.json`, `package.json`, `assets` ve `supabase` kök seviyede görünmeli.
+Bu ZIP'in içindeki dosyaları (App.js, app.json, package.json, assets, supabase vb.)
+GitHub deposunun `main` dalındaki kök dizine yükleyin. ZIP'in içindeki `src/` gibi
+ek bir klasöre taşımanız gerekmiyor; dosyalar doğrudan kök dizinde yer alır.
 
-## Veritabanı
-Oyun altyapısı SQL dosyaları `supabase/migrations/` içindedir. Bu iki migration SOHVIA Supabase projesinde daha önce uygulanmıştır. Aynı canlı veritabanına yeniden yüklerken SQL'leri tekrar çalıştırma; migration geçmişiyle eşleştir.
+## APK
+Bu kaynak paketi APK değildir. GitHub'a yükledikten sonra Expo EAS üzerinden
+Android preview derlemesi başlatılmalıdır:
+`eas build -p android --profile preview`
 
-Yönetici/moderasyon tabloları ve fonksiyonları önceki kurulumda canlı Supabase projesine uygulanmıştır. Bu paket onları yeniden kuran tam bir başlangıç veritabanı değildir.
-
-## EAS
-- Expo SDK 54
-- Android package: `com.sohvia.app`
-- EAS project ID: `7ffb0906-6eea-4278-b0e6-4464bee0fd42`
-- `eas.json` preview profili APK çıktısı içindir.
-
-## Önemli tamamlanmamış işler
-Bu paket tam bitmiş bir oyun olarak sunulmaz. 101 Okey'de şu an oda oluşturma/katılma, dört oyuncu kontrolü ve ilk taş dağıtımı vardır. Taş çekme-atma, gösterge/okey belirleme, seri/per açma, 101 puan kontrolü, bitiş/ceza ve tam hamle doğrulaması henüz geliştirilmelidir. Diğer oyunların oyun motorları da tamamlanmamıştır. Sesli/görüntülü görüşme için gerçek medya sunucusu entegrasyonu yoktur.
-
-Yeni APK oluşturulmuş veya iki cihazda test edilmiş değildir.
-
-## Vampir Köylü
-`supabase/migrations/202611082000_sohvia_vampir_koylu_engine_v1.sql` migration dosyası ve `VAMPIR_KOYLU_KURALLAR_VE_ALTYAPI.md` tasarım notları eklendi. Bu SQL henüz canlı Supabase projesine uygulanmadı.
+## Önemli
+- Tasarım renkleri ve ortak ekran görünümü kaynak koda işlendi; bu, onaylanan tek
+  görselin her pikselinin birebir kopyalandığı anlamına gelmez.
+- Gerçek cihaz testi ve APK derlemesi henüz yapılmadı.
+- Satranç çevrim içi güvenliği, görüntülü sohbet TURN sunucusu/yaş doğrulama
+  ve bazı oyun motorları hâlâ ayrıca tamamlanmalıdır.
+- Supabase `service_role` veya gizli anahtarları istemciye eklemeyin.

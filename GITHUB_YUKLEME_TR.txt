@@ -1,0 +1,17 @@
+SOHVIA - GITHUB TEST PAKETI
+
+1) ZIP'i aç.
+2) İçindeki dosya ve klasörlerin tamamını GitHub'daki Sohvia-app deposunun main dalına, mevcut proje dosyalarının üzerine yükle.
+3) Klasörün kendisini değil, içindeki App.js, package.json, app.json, assets, games ve supabase klasörlerini depo köküne koy.
+4) GitHub Actions / EAS Build ayarların varsa yeni commit sonrasında Android test derlemesini başlat.
+
+TASARIM
+- Onaylanan TASARIM_ONIZLEME.png referansı pakete eklidir.
+- Uygulama arayüzü mavi-beyaz ana tema, koyu lacivert giriş ekranı, mavi butonlar ve beyaz alt menüye güncellendi.
+- Yönetici hesabının kendi profil fotoğrafında dönen neon mavi/mor halka ve taç efekti bulunur. Normal üyelerin profil fotoğrafları etkilenmez.
+
+TEST DURUMU
+- App.js JavaScript sözdizimi kontrolünden geçirildi.
+- Bu ortamda iPhone/Android cihaz üzerinde canlı uygulama testi veya EAS APK derlemesi yapılmadı.
+- Bu paket kaynak koddur; APK değildir.
+- Oyunların bazıları ve görüntülü sohbet altyapısı önceki sürümdeki geliştirme durumunu korur; tüm oyunlar tamamlanmış değildir.

@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import {
   SafeAreaView, View, Text, TextInput, TouchableOpacity,
   ScrollView, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView,
-  Platform, Image, Modal, Linking, StatusBar
+  Platform, Image, Modal, Linking, StatusBar, Animated,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,7 +17,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { storage: AsyncStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false }
 });
 
-const C = { bg:"#07162D", card:"#102747", gold:"#36B9FF", white:"#F4F9FF", muted:"#A8BED8", line:"#244A75", blue:"#168BFF", green:"#42D9A0" };
+const C = { bg:"#F4F8FF", card:"#FFFFFF", gold:"#006EFF", white:"#102744", muted:"#647A96", line:"#D9E6F7", blue:"#006EFF", green:"#19B98A" };
 const GAME_META = {
   "okey-101": { emoji:"🀄", subtitle:"Taşını diz, 101'i aç, masayı kazan", accent:"#E9B65D", tag:"ÇOK OYUNCULU", players:"4 oyuncu", art:"101" },
   "tavla": { emoji:"🎲", subtitle:"Zarını at, pullarını topla", accent:"#D89A63", tag:"KLASİK", players:"2 oyuncu", art:"♟" },
@@ -76,6 +76,14 @@ export default function App() {
   const [joinCode,setJoinCode] = useState("");
   const [roomBusy,setRoomBusy] = useState(false);
   const [myTiles,setMyTiles] = useState([]);
+  const adminRotation = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const spin = Animated.loop(Animated.timing(adminRotation, { toValue: 1, duration: 5200, useNativeDriver: true }));
+    spin.start();
+    return () => spin.stop();
+  }, [isAdmin, adminRotation]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({data}) => {
@@ -400,23 +408,23 @@ export default function App() {
   if (loading) return <SafeAreaView style={styles.center}><ActivityIndicator color={C.gold}/><Text style={styles.muted}>SOHVIA açılıyor…</Text></SafeAreaView>;
 
   if (!session) return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, mode==="signup" && {backgroundColor:"#F5F9FF"}]}>
       <StatusBarShim/>
-      <KeyboardAvoidingView behavior={Platform.OS==="ios"?"padding":undefined} style={styles.authWrap}>
-        <View style={styles.brandMark}><Text style={styles.brandCrown}>♛</Text><Text style={styles.logo}>S</Text></View>
-        <Text style={styles.brandName}>SOHVIA</Text>
-        <Text style={styles.subtitle}>Bağlan • Paylaş • Oyna</Text>
-        <View style={styles.trustLine}><Text style={styles.trustText}>✦ Güvenli topluluk  ·  Gerçek bağlantılar</Text></View>
-        <Text style={styles.heading}>{mode==="login"?"Tekrar hoş geldin":"SOHVIA'ya katıl"}</Text>
+      <KeyboardAvoidingView behavior={Platform.OS==="ios"?"padding":undefined} style={[styles.authWrap, mode==="signup" && styles.authWrapLight]}>
+        <Image source={require("./assets/icon.png")} style={styles.brandLogo} resizeMode="contain"/>
+        <Text style={[styles.brandName, mode==="signup" && {color:"#102744"}]}>SOHVIA</Text>
+        <Text style={[styles.subtitle, mode==="signup" && {color:"#006EFF"}]}>Bağlan • Paylaş • Oyna • Keşfet</Text>
+        <View style={[styles.trustLine, mode==="signup" && {backgroundColor:"#EAF3FF",borderColor:"#B8D5FF"}]}><Text style={[styles.trustText, mode==="signup" && {color:"#17416F"}]}>✦ Güvenli topluluk  ·  Gerçek bağlantılar</Text></View>
+        <Text style={[styles.heading, mode==="signup" && {color:"#102744"}]}>{mode==="login"?"Tekrar hoş geldin":"SOHVIA'ya katıl"}</Text>
         {mode==="signup" && <>
-          <Field placeholder="Kullanıcı adı (5-24 karakter)" value={username} onChangeText={setUsername} autoCapitalize="none"/>
-          <Field placeholder="Görünen ad" value={displayName} onChangeText={setDisplayName}/>
+          <Field style={styles.authFieldLight} placeholder="Kullanıcı adı (5-24 karakter)" value={username} onChangeText={setUsername} autoCapitalize="none"/>
+          <Field style={styles.authFieldLight} placeholder="Görünen ad" value={displayName} onChangeText={setDisplayName}/>
         </>}
-        <Field placeholder="E-posta" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none"/>
-        <Field placeholder="Şifre (en az 6 karakter)" value={password} onChangeText={setPassword} secureTextEntry/>
+        <Field style={mode==="signup"?styles.authFieldLight:styles.authFieldDark} placeholder="E-posta" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none"/>
+        <Field style={mode==="signup"?styles.authFieldLight:styles.authFieldDark} placeholder="Şifre (en az 6 karakter)" value={password} onChangeText={setPassword} secureTextEntry/>
         <Btn title={busy?"Bekle…":mode==="login"?"Giriş yap":"Ücretsiz hesap oluştur"} onPress={authAction}/>
         <Btn secondary title={mode==="login"?"Hesabın yok mu? Kayıt ol":"Zaten hesabın var mı? Giriş yap"} onPress={()=>setMode(mode==="login"?"signup":"login")}/>
-        <Text style={styles.note}>E-posta doğrulaması kapalıysa kayıt sonrası doğrudan giriş yapabilirsin.</Text>
+        <Text style={[styles.note, mode==="signup" && {color:"#647A96"}]}>E-posta doğrulaması kapalıysa kayıt sonrası doğrudan giriş yapabilirsin.</Text>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -429,12 +437,12 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <StatusBarShim/>
       <View style={styles.header}>
-        <View><Text style={styles.logoSmall}>👑 SOHVIA</Text><Text style={styles.muted}>Bağlan • Paylaş • Oyna</Text></View>
+        <View><Text style={styles.logoSmall}>👑 SOHVIA</Text><Text style={styles.muted}>Bağlan • Paylaş • Oyna • Keşfet</Text></View>
         <Text style={styles.coins}>🪙 {wallet?.coin_balance ?? 0}</Text>
       </View>
       <ScrollView style={styles.body} contentContainerStyle={{paddingBottom:28}}>
         {tab==="Ana Sayfa" && <>
-          <View style={styles.hero}><Text style={styles.kicker}>SOHVIA'YA HOŞ GELDİN</Text><Text style={styles.heroTitle}>Burada herkesin bir yeri var. ✨</Text><Text style={styles.muted}>Arkadaşlarını keşfet, oyunlara katıl ve paylaş.</Text></View>
+          <View style={styles.hero}><Text style={styles.kicker}>SOHVIA DÜNYASINA HOŞ GELDİN</Text><Text style={styles.heroTitle}>Bağlan. Paylaş. Oyna. Keşfet. ✨</Text><Text style={styles.muted}>Arkadaşlarını keşfet, oyunlara katıl ve paylaş.</Text></View>
           <TouchableOpacity style={styles.videoLaunch} onPress={()=>setRandomVideo(true)}><Text style={styles.videoLaunchIcon}>📹</Text><View style={{flex:1}}><Text style={styles.videoLaunchTitle}>Rastgele Görüntülü Sohbet</Text><Text style={styles.muted}>18+ doğrulamasıyla yeni insanlarla tanış</Text></View><Text style={styles.videoLaunchArrow}>→</Text></TouchableOpacity>
           <Text style={styles.section}>Hikâyeler · 24 saat</Text>
           <Btn title={uploading?"Yükleniyor…":"＋ Fotoğraf / video hikâyesi ekle"} onPress={()=>chooseAndUpload("story")} secondary/>
@@ -506,7 +514,7 @@ export default function App() {
         </>}
         {tab==="Profil" && <>
           <Text style={styles.heading}>Profilim 👤</Text>
-          <View style={styles.profileCard}>{avatarUrl ? <Image source={{uri:avatarUrl}} style={styles.profileImage}/> : <Text style={styles.profileAvatar}>👑</Text>}<Text style={styles.heroTitle}>{profile?.display_name || "SOHVIA Üyesi"}</Text><Text style={styles.muted}>@{profile?.username || ""}</Text><Text style={styles.muted}>{profile?.bio || "Henüz biyografi eklenmedi."}</Text>
+          <View style={styles.profileCard}>{isAdmin ? <View style={styles.adminAvatarFrame}><Animated.View style={[styles.adminAvatarOrbit,{transform:[{rotate:adminRotation.interpolate({inputRange:[0,1],outputRange:["0deg","360deg"]})}]}]}/>{avatarUrl ? <Image source={{uri:avatarUrl}} style={styles.profileImage}/> : <Text style={styles.profileAvatar}>👑</Text>}<Text style={styles.adminCrown}>♛</Text></View> : avatarUrl ? <Image source={{uri:avatarUrl}} style={styles.profileImage}/> : <Text style={styles.profileAvatar}>👤</Text>}<Text style={styles.heroTitle}>{profile?.display_name || "SOHVIA Üyesi"}</Text><Text style={styles.muted}>@{profile?.username || ""}</Text><Text style={styles.muted}>{profile?.bio || "Henüz biyografi eklenmedi."}</Text>
             <View style={styles.profileBadges}><Text style={styles.profileBadge}>👑 {(profile?.membership || "free").toUpperCase()}</Text><Text style={styles.profileBadge}>✓ {profile?.blue_tick ? "Mavi Tik" : "Doğrulanmamış"}</Text></View>
             <View style={styles.profileStats}><View><Text style={styles.profileStatValue}>—</Text><Text style={styles.muted}>Gönderi</Text></View><View><Text style={styles.profileStatValue}>—</Text><Text style={styles.muted}>Takipçi</Text></View><View><Text style={styles.profileStatValue}>—</Text><Text style={styles.muted}>Takip</Text></View></View>
             <Text style={styles.section}>Jeton: {wallet?.coin_balance ?? 0}</Text></View>
@@ -570,25 +578,23 @@ function StatusBarShim(){ return <StatusBar barStyle="light-content" backgroundC
 
 const styles=StyleSheet.create({
   container:{flex:1,backgroundColor:C.bg},center:{flex:1,backgroundColor:C.bg,alignItems:"center",justifyContent:"center"},
-  authWrap:{flex:1,justifyContent:"center",padding:24},brandMark:{width:82,height:82,borderRadius:26,alignSelf:"center",alignItems:"center",justifyContent:"center",backgroundColor:"#0C2C55",borderWidth:1.5,borderColor:"#38BFFF",shadowColor:"#159BFF",shadowOpacity:0.45,shadowRadius:18,elevation:10,marginBottom:8},brandCrown:{position:"absolute",top:1,color:"#8CE4FF",fontSize:23},logo:{fontSize:42,fontWeight:"900",color:"#FFFFFF",textAlign:"center",marginTop:12,textShadowColor:"#168BFF",textShadowRadius:12},brandName:{fontSize:24,fontWeight:"900",color:C.white,textAlign:"center",letterSpacing:4,marginTop:3},
-  subtitle:{color:"#7DD7FF",textAlign:"center",marginTop:7,marginBottom:12,fontWeight:"700",letterSpacing:1},trustLine:{alignSelf:"center",backgroundColor:"#0D2B4D",borderWidth:1,borderColor:"#1D6094",paddingHorizontal:14,paddingVertical:8,borderRadius:20,marginBottom:25},trustText:{color:"#B9E8FF",fontSize:11,fontWeight:"700"},heading:{fontSize:25,color:C.white,fontWeight:"bold",marginBottom:16},
-  field:{backgroundColor:"#102947",color:C.white,padding:16,borderRadius:15,marginBottom:12,borderWidth:1,borderColor:"#2C5D8D"},
-  btn:{backgroundColor:"#087BEE",padding:16,borderRadius:15,alignItems:"center",marginTop:10,borderWidth:1,borderColor:"#54CFFF",shadowColor:"#008CFF",shadowOpacity:0.22,shadowRadius:8,elevation:3},btnSecondary:{backgroundColor:"#0D2745",borderWidth:1,borderColor:"#347DB4"},
-  btnText:{color:"#FFFFFF",fontWeight:"900",letterSpacing:0.3},note:{color:C.muted,fontSize:11,textAlign:"center",marginTop:18,lineHeight:17},
-  header:{paddingHorizontal:18,paddingVertical:13,borderBottomWidth:1,borderColor:C.line,backgroundColor:"#0A203C",flexDirection:"row",justifyContent:"space-between",alignItems:"center"},
-  logoSmall:{color:C.white,fontSize:23,fontWeight:"900",letterSpacing:2},muted:{color:C.muted,fontSize:12,marginTop:4},coins:{color:C.gold,backgroundColor:C.card,padding:10,borderRadius:18},
-  body:{flex:1,paddingHorizontal:16,paddingTop:18},hero:{backgroundColor:"#10345B",padding:20,borderRadius:22,borderWidth:1,borderColor:"#258BD0",marginBottom:20},
-  kicker:{color:C.gold,fontWeight:"bold",fontSize:11},heroTitle:{color:C.white,fontWeight:"bold",fontSize:24,marginVertical:10},section:{color:C.white,fontWeight:"bold",fontSize:17,marginTop:18,marginBottom:10},
-  rowCard:{backgroundColor:C.card,padding:13,borderRadius:14,marginBottom:9,flexDirection:"row",alignItems:"center",gap:10,borderWidth:1,borderColor:C.line},
-  gamesPromo:{backgroundColor:"#0D2C50",borderWidth:1,borderColor:"#267FC0",borderRadius:20,padding:18,marginBottom:18},gamesEyebrow:{color:"#C3A2FF",fontWeight:"900",fontSize:10,letterSpacing:2},gamesPromoTitle:{color:C.white,fontSize:22,fontWeight:"900",marginTop:8,lineHeight:28},gamesStats:{flexDirection:"row",flexWrap:"wrap",gap:8,marginTop:14},gamesStat:{color:"#D8C8F2",fontSize:10,backgroundColor:"#35294A",padding:8,borderRadius:10},gameTile:{backgroundColor:"#102747",borderWidth:1,borderRadius:18,padding:12,marginBottom:11,flexDirection:"row",alignItems:"center",gap:12},gameArt:{width:88,height:92,borderRadius:17,borderWidth:1,alignItems:"center",justifyContent:"center",position:"relative"},gameArtMark:{fontSize:10,fontWeight:"900",position:"absolute",bottom:5,right:8},gameTag:{fontSize:9,fontWeight:"900",letterSpacing:1.5},gameName:{fontSize:17,color:C.white,fontWeight:"900",marginTop:3},gamePlayers:{color:"#D8C8F2",fontSize:10,marginTop:6},playPill:{paddingHorizontal:11,paddingVertical:9,borderRadius:12},playPillText:{color:"#17101E",fontWeight:"900",fontSize:10},tableHeader:{marginBottom:12},okeyTable:{backgroundColor:"#103D35",borderRadius:18,borderWidth:2,borderColor:"#C69A4A",padding:14,marginTop:12,marginBottom:12},okeyTableTitle:{color:"#F4D28B",fontWeight:"900",letterSpacing:2,textAlign:"center",marginBottom:12},okeyCenter:{backgroundColor:"#145347",borderRadius:50,padding:15,alignItems:"center",marginBottom:14,borderWidth:1,borderColor:"#438B72"},okeyCenterEmoji:{fontSize:32},okeyCenterText:{color:"#F7E5B9",fontWeight:"900",fontSize:11,letterSpacing:1},tileRack:{flexDirection:"row",flexWrap:"wrap",gap:5,marginVertical:12},tile:{backgroundColor:"#FFF9EC",borderRadius:7,width:36,height:51,alignItems:"center",justifyContent:"center",borderWidth:1,borderColor:"#D9C9A8",elevation:2},tileColor:{fontSize:5,color:"#746B60",fontWeight:"700",marginTop:2},
-  cardTitle:{color:C.white,fontWeight:"bold",fontSize:14},gold:{color:C.gold,fontWeight:"bold"},gameEmoji:{fontSize:25},avatar:{fontSize:26,marginRight:4},
-  nav:{flexDirection:"row",justifyContent:"space-around",paddingTop:9,paddingBottom:20,backgroundColor:"#FFFFFF",borderTopWidth:1,borderColor:C.line},
-  videoLaunch:{backgroundColor:"#0B3159",borderWidth:1,borderColor:"#27AFFF",borderRadius:18,padding:15,marginBottom:18,flexDirection:"row",alignItems:"center",gap:12},videoLaunchIcon:{fontSize:30},videoLaunchTitle:{color:C.white,fontWeight:"900",fontSize:15},videoLaunchArrow:{color:"#67D8FF",fontSize:26,fontWeight:"900"},
-  navItem:{alignItems:"center",justifyContent:"center",minWidth:48,flex:1,paddingVertical:3},navIcon:{fontSize:27,color:"#6F88A5",fontWeight:"700"},navIconActive:{color:C.blue,fontSize:30},navText:{color:C.muted,fontSize:10,marginTop:2},
-  bubble:{padding:13,borderRadius:18,marginVertical:6,maxWidth:"84%",borderWidth:1},mine:{backgroundColor:"#DCEEFF",borderColor:"#B8DBFF",alignSelf:"flex-end",borderBottomRightRadius:5},theirs:{backgroundColor:"#FFFFFF",borderColor:C.line,alignSelf:"flex-start",borderBottomLeftRadius:5},
-  bubbleText:{color:"#173653",fontSize:15,lineHeight:21},compose:{flexDirection:"row",alignItems:"center",gap:10,marginTop:12},messageInput:{flex:1,backgroundColor:C.card,color:C.white,padding:12,borderRadius:12},
-  chatContact:{backgroundColor:"#FFFFFF",borderWidth:1,borderColor:C.line,borderRadius:17,padding:13,marginBottom:10,flexDirection:"row",alignItems:"center",gap:12},chatAvatar:{width:52,height:52,borderRadius:26,backgroundColor:"#E7F2FF",alignItems:"center",justifyContent:"center"},chatName:{color:"#173653",fontWeight:"900",fontSize:16},chatArrow:{fontSize:30,color:C.blue},chatComposer:{flexDirection:"row",alignItems:"flex-end",gap:9,marginTop:14,padding:8,backgroundColor:"#FFFFFF",borderRadius:20,borderWidth:1,borderColor:C.line},chatInput:{flex:1,maxHeight:110,minHeight:42,color:"#173653",fontSize:15,paddingHorizontal:10,paddingVertical:9},sendButton:{width:44,height:44,borderRadius:22,backgroundColor:C.blue,alignItems:"center",justifyContent:"center"},sendButtonText:{color:"#FFFFFF",fontSize:22,fontWeight:"900"},
-  profileBadges:{flexDirection:"row",gap:8,marginTop:12,flexWrap:"wrap"},profileBadge:{backgroundColor:"#E8F3FF",color:"#087BEE",paddingHorizontal:12,paddingVertical:7,borderRadius:14,fontWeight:"900",overflow:"hidden"},profileStats:{flexDirection:"row",justifyContent:"space-around",width:"100%",marginTop:18,paddingTop:15,borderTopWidth:1,borderColor:C.line},profileStatValue:{fontSize:20,fontWeight:"900",color:"#173653",textAlign:"center"},membershipPanel:{backgroundColor:"#FFFFFF",borderRadius:18,borderWidth:1,borderColor:"#CFE3F8",padding:16,marginTop:14},membershipTitle:{color:"#087BEE",fontWeight:"900",fontSize:15,letterSpacing:1},membershipText:{color:"#173653",fontWeight:"900",fontSize:15,marginTop:8},membershipPrice:{color:"#087BEE",fontWeight:"900",fontSize:16},membershipRow:{flexDirection:"row",justifyContent:"space-between",alignItems:"center",marginTop:14,paddingTop:12,borderTopWidth:1,borderColor:C.line},
-  profileCard:{backgroundColor:C.card,padding:22,borderRadius:18,alignItems:"center"},profileAvatar:{fontSize:60,marginBottom:12},profileImage:{width:104,height:104,borderRadius:52,marginBottom:12,borderWidth:2,borderColor:C.gold},
-  postCard:{backgroundColor:C.card,padding:15,borderRadius:15,marginBottom:12,borderWidth:1,borderColor:C.line},postBody:{color:C.white,fontSize:15,marginVertical:12,lineHeight:21},commentText:{color:C.muted,fontSize:12,marginTop:7},storyPill:{backgroundColor:C.card,borderRadius:13,padding:12,marginRight:8,minWidth:120}
+  authWrap:{flex:1,justifyContent:"center",padding:24,backgroundColor:"#061B3A"},authWrapLight:{backgroundColor:"#F5F9FF"},
+  brandLogo:{width:116,height:116,alignSelf:"center",marginBottom:8,borderRadius:28},brandName:{fontSize:27,fontWeight:"900",color:"#FFFFFF",textAlign:"center",letterSpacing:5,marginTop:3},
+  subtitle:{color:"#75D9FF",textAlign:"center",marginTop:7,marginBottom:12,fontWeight:"800",letterSpacing:1},trustLine:{alignSelf:"center",backgroundColor:"#0B2B55",borderWidth:1,borderColor:"#168FEA",paddingHorizontal:14,paddingVertical:8,borderRadius:20,marginBottom:25},trustText:{color:"#DDF6FF",fontSize:11,fontWeight:"700"},heading:{fontSize:25,color:"#FFFFFF",fontWeight:"bold",marginBottom:16},
+  field:{backgroundColor:"#FFFFFF",color:C.white,padding:16,borderRadius:15,marginBottom:12,borderWidth:1,borderColor:"#C8D9EF"},authFieldDark:{backgroundColor:"#0B2B55",color:"#FFFFFF",borderColor:"#197ED0"},authFieldLight:{backgroundColor:"#FFFFFF",color:"#102744",borderColor:"#C8D9EF"},
+  btn:{backgroundColor:"#006EFF",padding:16,borderRadius:18,alignItems:"center",marginTop:10,borderWidth:1,borderColor:"#59BFFF",shadowColor:"#007BFF",shadowOpacity:0.28,shadowRadius:9,elevation:4},btnSecondary:{backgroundColor:"#FFFFFF",borderWidth:1,borderColor:"#B9D4F5"},btnText:{color:"#FFFFFF",fontWeight:"900",letterSpacing:0.3},note:{color:"#B9D7F6",fontSize:11,textAlign:"center",marginTop:18,lineHeight:17},
+  header:{paddingHorizontal:18,paddingVertical:13,borderBottomWidth:1,borderColor:C.line,backgroundColor:"#FFFFFF",flexDirection:"row",justifyContent:"space-between",alignItems:"center"},logoSmall:{color:"#102744",fontSize:23,fontWeight:"900",letterSpacing:2},muted:{color:C.muted,fontSize:12,marginTop:4},coins:{color:"#005DCE",backgroundColor:"#EAF3FF",padding:10,borderRadius:18,fontWeight:"900"},
+  body:{flex:1,paddingHorizontal:16,paddingTop:15},hero:{backgroundColor:"#082B5B",padding:20,borderRadius:24,borderWidth:1.5,borderColor:"#159DFF",marginBottom:20},kicker:{color:"#72D9FF",fontWeight:"bold",fontSize:11},heroTitle:{color:C.white,fontWeight:"bold",fontSize:24,marginVertical:10},section:{color:"#102744",fontWeight:"bold",fontSize:17,marginTop:18,marginBottom:10},
+  rowCard:{backgroundColor:"#FFFFFF",padding:13,borderRadius:14,marginBottom:9,flexDirection:"row",alignItems:"center",gap:10,borderWidth:1,borderColor:C.line},gamesPromo:{backgroundColor:"#082B5B",borderWidth:1,borderColor:"#168FEA",borderRadius:20,padding:18,marginBottom:18},gamesEyebrow:{color:"#75D9FF",fontWeight:"900",fontSize:10,letterSpacing:2},gamesPromoTitle:{color:"#FFFFFF",fontSize:22,fontWeight:"900",marginTop:8,lineHeight:28},gamesStats:{flexDirection:"row",flexWrap:"wrap",gap:8,marginTop:14},gamesStat:{color:"#D7EEFF",fontSize:10,backgroundColor:"#164477",padding:8,borderRadius:10},gameTile:{backgroundColor:"#FFFFFF",borderWidth:1,borderRadius:18,padding:12,marginBottom:11,flexDirection:"row",alignItems:"center",gap:12},gameArt:{width:78,height:82,borderRadius:17,borderWidth:1,alignItems:"center",justifyContent:"center",position:"relative"},gameArtMark:{fontSize:10,fontWeight:"900",position:"absolute",bottom:5,right:8},gameTag:{fontSize:9,fontWeight:"900",letterSpacing:1.5},gameName:{fontSize:17,color:"#102744",fontWeight:"900",marginTop:3},gamePlayers:{color:"#607A98",fontSize:10,marginTop:6},playPill:{paddingHorizontal:11,paddingVertical:9,borderRadius:12},playPillText:{color:"#FFFFFF",fontWeight:"900",fontSize:10},
+  tableHeader:{marginBottom:12},okeyTable:{backgroundColor:"#0B5B4C",borderRadius:18,borderWidth:2,borderColor:"#D7B65B",padding:14,marginTop:12,marginBottom:12},okeyTableTitle:{color:"#F4D28B",fontWeight:"900",letterSpacing:2,textAlign:"center",marginBottom:12},okeyCenter:{backgroundColor:"#146D5B",borderRadius:50,padding:15,alignItems:"center",marginBottom:14,borderWidth:1,borderColor:"#68B69A"},okeyCenterEmoji:{fontSize:32},okeyCenterText:{color:"#F7E5B9",fontWeight:"900",fontSize:11,letterSpacing:1},tileRack:{flexDirection:"row",flexWrap:"wrap",gap:5,marginVertical:12},tile:{backgroundColor:"#FFF9EC",borderRadius:7,width:36,height:51,alignItems:"center",justifyContent:"center",borderWidth:1,borderColor:"#D9C9A8",elevation:2},tileColor:{fontSize:5,color:"#746B60",fontWeight:"700",marginTop:2},
+  cardTitle:{color:"#102744",fontWeight:"bold",fontSize:14},gold:{color:"#006EFF",fontWeight:"bold"},gameEmoji:{fontSize:25},avatar:{fontSize:26,marginRight:4},
+  nav:{flexDirection:"row",justifyContent:"space-around",paddingTop:9,paddingBottom:18,backgroundColor:"#FFFFFF",borderTopWidth:1,borderColor:C.line,elevation:12},navItem:{alignItems:"center",justifyContent:"center",minWidth:42,flex:1,paddingVertical:3},navIcon:{fontSize:25,color:"#8295AE",fontWeight:"700"},navIconActive:{color:"#006EFF",fontSize:28},navText:{color:"#647A96",fontSize:9,marginTop:2},
+  videoLaunch:{backgroundColor:"#EAF3FF",borderWidth:1,borderColor:"#A8D3FF",borderRadius:18,padding:15,marginBottom:18,flexDirection:"row",alignItems:"center",gap:12},videoLaunchIcon:{fontSize:30},videoLaunchTitle:{color:"#102744",fontWeight:"900",fontSize:15},videoLaunchArrow:{color:"#006EFF",fontSize:26,fontWeight:"900"},
+  bubble:{padding:13,borderRadius:18,marginVertical:6,maxWidth:"84%",borderWidth:1},mine:{backgroundColor:"#DCEEFF",borderColor:"#80BFFF",alignSelf:"flex-end",borderBottomRightRadius:5},theirs:{backgroundColor:"#FFFFFF",borderColor:C.line,alignSelf:"flex-start",borderBottomLeftRadius:5},bubbleText:{color:"#102744",fontSize:15,lineHeight:21},compose:{flexDirection:"row",alignItems:"center",gap:10,marginTop:12},messageInput:{flex:1,backgroundColor:"#FFFFFF",color:"#102744",padding:12,borderRadius:12,borderWidth:1,borderColor:C.line},
+  chatContact:{backgroundColor:"#FFFFFF",borderWidth:1,borderColor:C.line,borderRadius:17,padding:13,marginBottom:10,flexDirection:"row",alignItems:"center",gap:12},chatAvatar:{width:52,height:52,borderRadius:26,backgroundColor:"#EAF3FF",alignItems:"center",justifyContent:"center"},chatName:{color:"#102744",fontWeight:"900",fontSize:16},chatArrow:{fontSize:30,color:C.blue},chatComposer:{flexDirection:"row",alignItems:"flex-end",gap:9,marginTop:14,padding:8,backgroundColor:"#FFFFFF",borderRadius:20,borderWidth:1,borderColor:C.line},chatInput:{flex:1,maxHeight:110,minHeight:42,color:"#102744",fontSize:15,paddingHorizontal:10,paddingVertical:9},sendButton:{width:44,height:44,borderRadius:22,backgroundColor:C.blue,alignItems:"center",justifyContent:"center"},sendButtonText:{color:"#FFFFFF",fontSize:22,fontWeight:"900"},
+  profileBadges:{flexDirection:"row",gap:8,marginTop:12,flexWrap:"wrap"},profileBadge:{backgroundColor:"#EAF3FF",color:"#005DCE",paddingHorizontal:12,paddingVertical:7,borderRadius:14,fontWeight:"900",overflow:"hidden"},profileStats:{flexDirection:"row",justifyContent:"space-around",width:"100%",marginTop:18,paddingTop:15,borderTopWidth:1,borderColor:C.line},profileStatValue:{fontSize:20,fontWeight:"900",color:"#102744",textAlign:"center"},membershipPanel:{backgroundColor:"#FFFFFF",borderRadius:18,borderWidth:1,borderColor:"#B8D5F5",padding:16,marginTop:14},membershipTitle:{color:"#006EFF",fontWeight:"900",fontSize:15,letterSpacing:1},membershipText:{color:"#102744",fontWeight:"900",fontSize:15,marginTop:8},membershipPrice:{color:"#006EFF",fontWeight:"900",fontSize:16},membershipRow:{flexDirection:"row",justifyContent:"space-between",alignItems:"center",marginTop:14,paddingTop:12,borderTopWidth:1,borderColor:C.line},
+  profileCard:{backgroundColor:"#FFFFFF",padding:22,borderRadius:18,alignItems:"center",borderWidth:1,borderColor:C.line},profileAvatar:{fontSize:60,marginBottom:12,color:"#006EFF"},profileImage:{width:104,height:104,borderRadius:52,marginBottom:12,borderWidth:2,borderColor:"#168FEA"},
+  adminAvatarFrame:{width:126,height:126,alignItems:"center",justifyContent:"center",marginBottom:8},adminAvatarOrbit:{position:"absolute",width:122,height:122,borderRadius:61,borderWidth:4,borderColor:"#00A9FF",borderTopColor:"#A855F7",borderRightColor:"#FFFFFF",shadowColor:"#008CFF",shadowOpacity:0.95,shadowRadius:15,elevation:12},adminCrown:{position:"absolute",top:-2,right:5,fontSize:26,color:"#00A6FF",textShadowColor:"#6B5CFF",textShadowRadius:12},
+  postCard:{backgroundColor:"#FFFFFF",padding:15,borderRadius:15,marginBottom:12,borderWidth:1,borderColor:C.line},postBody:{color:"#102744",fontSize:15,marginVertical:12,lineHeight:21},commentText:{color:C.muted,fontSize:12,marginTop:7},storyPill:{backgroundColor:"#FFFFFF",borderWidth:1,borderColor:C.line,borderRadius:13,padding:12,marginRight:8,minWidth:120},
+  storyModal:{flex:1,backgroundColor:"#061B3A",padding:20,justifyContent:"center",alignItems:"center"},storyClose:{position:"absolute",top:55,right:20,zIndex:2,padding:10},storyCloseText:{color:"#FFFFFF",fontWeight:"900"},storyViewer:{width:"100%",height:"72%"},videoOpen:{padding:30,alignItems:"center"}
 });
